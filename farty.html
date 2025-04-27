@@ -1,0 +1,1690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arc Command</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+            color: #33ff33;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+        }
+        #ui-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        .ui-element {
+            pointer-events: auto;
+        }
+        #home-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        #game-title {
+            font-size: 5em;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #33ff33;
+        }
+        #game-subtitle {
+            font-size: 1.5em;
+            margin-bottom: 40px;
+        }
+        .menu-container {
+            background-color: rgba(0, 20, 0, 0.8);
+            border: 2px solid #33ff33;
+            border-radius: 10px;
+            padding: 20px;
+            width: 80%;
+            max-width: 600px;
+        }
+        .menu-item {
+            margin: 15px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .menu-label {
+            font-size: 1.2em;
+        }
+        .menu-input {
+            background-color: rgba(0, 40, 0, 0.8);
+            border: 1px solid #33ff33;
+            color: #33ff33;
+            padding: 8px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+        }
+        .menu-button {
+            background-color: rgba(0, 40, 0, 0.8);
+            border: 1px solid #33ff33;
+            color: #33ff33;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1.2em;
+            margin: 10px;
+        }
+        .menu-button:hover {
+            background-color: rgba(0, 80, 0, 0.8);
+            box-shadow: 0 0 10px #33ff33;
+        }
+        #start-button {
+            margin-top: 30px;
+            padding: 15px 40px;
+            font-size: 1.5em;
+        }
+        #hud {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background-color: rgba(0, 20, 0, 0.7);
+            border: 1px solid #33ff33;
+            border-radius: 5px;
+            padding: 10px;
+            display: none;
+        }
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background-color: rgba(0, 20, 0, 0.7);
+            border: 1px solid #33ff33;
+            border-radius: 5px;
+            padding: 10px;
+            display: none;
+        }
+        .control-item {
+            margin: 10px 0;
+        }
+        #commander-chart {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            height: 90%;
+            background-color: rgba(0, 20, 0, 0.9);
+            border: 2px solid #33ff33;
+            border-radius: 10px;
+            display: none;
+            z-index: 50;
+            overflow: auto;
+        }
+        .chart-section {
+            padding: 15px;
+            border-bottom: 1px solid #33ff33;
+        }
+        #chart-formulas {
+            font-family: monospace;
+            white-space: pre;
+        }
+        #chart-map {
+            height: 400px;
+            position: relative;
+            background-color: rgba(0, 40, 0, 0.5);
+            border: 1px solid #33ff33;
+            margin: 10px 0;
+        }
+        #chart-notes {
+            display: flex;
+            flex-direction: column;
+        }
+        #notes-textarea {
+            background-color: rgba(0, 40, 0, 0.8);
+            border: 1px solid #33ff33;
+            color: #33ff33;
+            padding: 10px;
+            height: 100px;
+            font-family: 'Courier New', monospace;
+            margin-bottom: 10px;
+        }
+        #calculator {
+            display: flex;
+            flex-wrap: wrap;
+            max-width: 300px;
+        }
+        .calc-button {
+            width: 50px;
+            height: 40px;
+            margin: 2px;
+            background-color: rgba(0, 40, 0, 0.8);
+            border: 1px solid #33ff33;
+            color: #33ff33;
+            cursor: pointer;
+        }
+        #calc-display {
+            width: 100%;
+            height: 40px;
+            background-color: rgba(0, 40, 0, 0.8);
+            border: 1px solid #33ff33;
+            color: #33ff33;
+            margin-bottom: 5px;
+            padding: 5px;
+            text-align: right;
+            font-family: monospace;
+        }
+        #bearing-ruler {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            border: 1px dashed #33ff33;
+            opacity: 0.7;
+            display: none;
+        }
+        #game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        #game-over-title {
+            font-size: 4em;
+            color: #ff3333;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #ff3333;
+        }
+        #game-over-stats {
+            font-size: 1.5em;
+            margin-bottom: 30px;
+        }
+        #tutorial-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 80%;
+            background-color: rgba(0, 20, 0, 0.9);
+            border: 2px solid #33ff33;
+            border-radius: 10px;
+            display: none;
+            z-index: 60;
+            padding: 20px;
+            overflow: auto;
+        }
+        .close-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(40, 0, 0, 0.8);
+            border: 1px solid #ff3333;
+            color: #ff3333;
+            width: 30px;
+            height: 30px;
+            border-radius: 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+        }
+        #timer-display {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(0, 20, 0, 0.7);
+            border: 1px solid #33ff33;
+            border-radius: 5px;
+            padding: 10px;
+            font-size: 1.5em;
+            display: none;
+        }
+        #message-log {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: rgba(0, 20, 0, 0.7);
+            border: 1px solid #33ff33;
+            border-radius: 5px;
+            padding: 10px;
+            width: 400px;
+            height: 150px;
+            overflow-y: auto;
+            display: none;
+        }
+        .message {
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+        #shell-counter {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 20, 0, 0.7);
+            border: 1px solid #33ff33;
+            border-radius: 5px;
+            padding: 10px;
+            font-size: 1.2em;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="ui-container">
+        <div id="home-screen" class="ui-element">
+            <h1 id="game-title">ARC COMMAND</h1>
+            <h2 id="game-subtitle">Precision Artillery Targeting System</h2>
+            <div class="menu-container">
+                <div class="menu-item">
+                    <span class="menu-label">Battery Name:</span>
+                    <input type="text" id="battery-name-input" class="menu-input" value="Alpha Battery">
+                </div>
+                <div class="menu-item">
+                    <span class="menu-label">Difficulty:</span>
+                    <select id="difficulty-select" class="menu-input">
+                        <option value="easiest">Relaxed mode 😄</option>
+                        <option value="easy">Elementary mode 😊</option>
+                        <option value="medium" selected>Humane mode 🙂</option>
+                        <option value="hard">Computer Science student mode 😟</option>
+                        <option value="hardest">World War 2 Veteran 😡</option>
+                    </select>
+                </div>
+                <div style="display: flex; justify-content: center; margin-top: 20px;">
+                    <button id="tutorial-button" class="menu-button">Tutorial</button>
+                </div>
+                <div style="display: flex; justify-content: center;">
+                    <button id="start-button" class="menu-button">START MISSION</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="hud" class="ui-element">
+            <div id="mission-info"></div>
+            <div id="target-info"></div>
+        </div>
+
+        <div id="controls" class="ui-element">
+            <div class="control-item">
+                <label for="elevation-input">Elevation: </label>
+                <input type="number" id="elevation-input" min="0" max="30" step="0.01" value="0">
+                <input type="range" id="elevation-slider" min="0" max="30" step="0.01" value="0">
+            </div>
+            <div class="control-item">
+                <label for="azimuth-input">Azimuth: </label>
+                <input type="number" id="azimuth-input" min="0" max="360" step="0.01" value="0">
+                <input type="range" id="azimuth-slider" min="0" max="360" step="0.01" value="0">
+            </div>
+            <div class="control-item">
+                <button id="fire-button" class="menu-button">FIRE</button>
+                <button id="chart-button" class="menu-button">COMMANDER CHART</button>
+                <button id="give-up-button" class="menu-button">GIVE UP?</button>
+            </div>
+        </div>
+
+        <div id="commander-chart" class="ui-element">
+            <div class="close-button" id="close-chart">X</div>
+            <div class="chart-section">
+                <h2>Formulas and Variables</h2>
+                <pre id="chart-formulas">
+Variables:
+X = Battery/Artillery name
+Y = Forward Observer
+Z = Target
+a = Forward Observer to Target
+b = Battery to Target
+c = Battery To Forward Observer
+
+Law of Cosines:
+a² = b² + c² - 2bc·cos(X)
+b² = a² + c² - 2ac·cos(Y)
+c² = a² + b² - 2ab·cos(Z)
+
+Ballistics Formula:
+Elevation θ = 4 × (distance / 1400ft)
+                </pre>
+            </div>
+            <div class="chart-section">
+                <h2>Tactical Map</h2>
+                <div id="chart-map">
+                    <div id="bearing-ruler"></div>
+                </div>
+                <button id="toggle-triangle" class="menu-button">Toggle Triangle</button>
+                <button id="toggle-ruler" class="menu-button">Toggle Bearing Ruler</button>
+            </div>
+            <div class="chart-section">
+                <h2>Notes and Calculator</h2>
+                <div id="chart-notes">
+                    <textarea id="notes-textarea" placeholder="Mission notes..."></textarea>
+                    <div id="calculator">
+                        <div id="calc-display">0</div>
+                        <button class="calc-button">7</button>
+                        <button class="calc-button">8</button>
+                        <button class="calc-button">9</button>
+                        <button class="calc-button">/</button>
+                        <button class="calc-button">sin</button>
+                        <button class="calc-button">4</button>
+                        <button class="calc-button">5</button>
+                        <button class="calc-button">6</button>
+                        <button class="calc-button">*</button>
+                        <button class="calc-button">cos</button>
+                        <button class="calc-button">1</button>
+                        <button class="calc-button">2</button>
+                        <button class="calc-button">3</button>
+                        <button class="calc-button">-</button>
+                        <button class="calc-button">tan</button>
+                        <button class="calc-button">0</button>
+                        <button class="calc-button">.</button>
+                        <button class="calc-button">(</button>
+                        <button class="calc-button">)</button>
+                        <button class="calc-button">+</button>
+                        <button class="calc-button">=</button>
+                        <button class="calc-button">C</button>
+                    </div>
+                </div>
+            </div>
+            <div class="chart-section">
+                <h2>Forward Observer Report</h2>
+                <div id="fo-report"></div>
+            </div>
+        </div>
+
+        <div id="tutorial-container" class="ui-element">
+            <div class="close-button" id="close-tutorial">X</div>
+            <h2>Arc Command - Tutorial</h2>
+            <div class="tutorial-section">
+                <h3>Mission Overview</h3>
+                <p>Welcome to Arc Command, an artillery targeting simulation. Your mission is to accurately calculate firing solutions to eliminate enemy targets using trigonometry and ballistics formulas.</p>
+                
+                <h3>Key Positions</h3>
+                <ul>
+                    <li><strong>Battery (X)</strong>: Your artillery position</li>
+                    <li><strong>Forward Observer (Y)</strong>: Scout who can see the target</li>
+                    <li><strong>Target (Z)</strong>: Enemy position to be eliminated</li>
+                </ul>
+                
+                <h3>Calculating the Solution</h3>
+                <p>You'll need to use the Law of Cosines to determine the distance from the Forward Observer to the Target:</p>
+                <pre>a² = b² + c² - 2bc·cos(X)</pre>
+                <p>Where:</p>
+                <ul>
+                    <li>a = Distance from Forward Observer to Target (what you're solving for)</li>
+                    <li>b = Distance from Battery to Target</li>
+                    <li>c = Distance from Battery to Forward Observer</li>
+                    <li>X = Angle at the Battery position</li>
+                </ul>
+                
+                <h3>Artillery Controls</h3>
+                <ul>
+                    <li><strong>Elevation</strong>: Vertical angle of the gun barrel (affects range)</li>
+                    <li><strong>Azimuth</strong>: Horizontal direction to aim (compass bearing)</li>
+                </ul>
+                
+                <h3>Ballistics Formula</h3>
+                <p>To determine the correct elevation angle:</p>
+                <pre>Elevation θ = 4 × (distance / 1400ft)</pre>
+                
+                <h3>Azimuth Calculation</h3>
+                <p>Use the bearing ruler in the Commander Chart to determine the correct azimuth from your position to the target.</p>
+                
+                <h3>Target Types</h3>
+                <h4>Aircraft</h4>
+                <p>Use Flak Shells: Anti-aircraft shells that burst into a cloud of heavy, slow-moving fragments.</p>
+                
+                <h4>Armored Vehicles</h4>
+                <p>Use Armor-Piercing Capped: Shells with a softer metal cap to improve penetration against sloped armor and prevent shattering on impact.</p>
+                
+                <h4>Buildings</h4>
+                <p>Use HE Concussion: High-Explosive shells designed to create a powerful blast wave for structural damage to buildings.</p>
+                
+                <h3>Difficulty Levels</h3>
+                <ul>
+                    <li><strong>Relaxed mode 😄</strong>: 5 shells, trajectory guide, no time limit</li>
+                    <li><strong>Elementary mode 😊</strong>: 3 shells, trajectory guide, 19 minutes</li>
+                    <li><strong>Humane mode 🙂</strong>: 2 shells, no trajectory guide, 13 minutes</li>
+                    <li><strong>Computer Science student mode 😟</strong>: 1 shell, no trajectory guide, 5 minutes, 3x score</li>
+                    <li><strong>World War 2 Veteran 😡</strong>: 1 shell, no trajectory guide, 2 minutes, 10x score</li>
+                </ul>
+                
+                <h3>Controls</h3>
+                <ul>
+                    <li>Hold left mouse button to rotate camera (cannot go below ground)</li>
+                    <li>Use elevation and azimuth controls to aim</li>
+                    <li>Press FIRE to launch shell</li>
+                    <li>Open Commander Chart for calculations and notes</li>
+                </ul>
+                
+                <p>Good luck, Commander!</p>
+            </div>
+        </div>
+
+        <div id="timer-display" class="ui-element">Time: 00:00</div>
+        <div id="message-log" class="ui-element"></div>
+        <div id="shell-counter" class="ui-element">Shells: 0</div>
+
+        <div id="game-over" class="ui-element">
+            <div id="game-over-title">MISSION FAILED</div>
+            <div id="game-over-stats"></div>
+            <button id="restart-button" class="menu-button">RETURN TO BASE</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+
+
+    <script>
+        const gameState = {
+    started: false,
+    batteryName: "Alpha Battery",
+    difficulty: "medium",
+    shells: 0,
+    maxShells: 2,
+    timeLimit: 13 * 60, 
+    timeRemaining: 0,
+    timerInterval: null,
+    score: 0,
+    wins: 0,
+    showTrajectory: false,
+    targetType: null,
+    shellType: null,
+    positions: {
+        battery: new THREE.Vector3(0, 0, 0),
+        forwardObserver: new THREE.Vector3(0, 0, 0),
+        target: new THREE.Vector3(0, 0, 0)
+    },
+    distances: {
+        batteryToTarget: 0,
+        batteryToFO: 0,
+        foToTarget: 0
+    },
+    angles: {
+        atBattery: 0,
+        atFO: 0,
+        atTarget: 0
+    },
+    solution: {
+        elevation: 0,
+        azimuth: 0
+    },
+    currentElevation: 0,
+    currentAzimuth: 0,
+    isFiring: false,
+    debugMode: false,
+    secretCode: "",
+    lastKeyTime: 0
+};
+const targetTypes = {
+    aircraft: [
+        "MiG-29 Fighter",
+        "Su-25 Attack Aircraft",
+        "Mi-24 Helicopter",
+        "Tu-95 Bomber",
+        "Ka-52 Helicopter"
+    ],
+    armoredVehicles: [
+        "T-72 Main Battle Tank",
+        "BMP-3 Infantry Fighting Vehicle",
+        "BTR-80 Armored Personnel Carrier",
+        "2S19 Msta Self-Propelled Howitzer",
+        "ZSU-23-4 Anti-Aircraft System"
+    ],
+    buildings: [
+        "Command Post",
+        "Ammunition Depot",
+        "Communications Center",
+        "Radar Station",
+        "Fuel Storage Facility"
+    ]
+};
+const shellTypes = {
+    aircraft: "Flak",
+    armoredVehicles: "Armor-Piercing Capped",
+    buildings: "HE Concussion"
+};
+const difficultySettings = {
+    easiest: {
+        name: "Relaxed mode 😄",
+        shells: 5,
+        timeLimit: Infinity,
+        showTrajectory: true,
+        scoreMultiplier: 1
+    },
+    easy: {
+        name: "Elementary mode 😊",
+        shells: 3,
+        timeLimit: 19 * 60,
+        showTrajectory: true,
+        scoreMultiplier: 1
+    },
+    medium: {
+        name: "Humane mode 🙂",
+        shells: 2,
+        timeLimit: 13 * 60,
+        showTrajectory: false,
+        scoreMultiplier: 1
+    },
+    hard: {
+        name: "Computer Science student mode 😟",
+        shells: 1,
+        timeLimit: 5 * 60,
+        showTrajectory: false,
+        scoreMultiplier: 3
+    },
+    hardest: {
+        name: "World War 2 Veteran 😡",
+        shells: 1,
+        timeLimit: 2 * 60,
+        showTrajectory: false,
+        scoreMultiplier: 10
+    }
+};
+const militaryRanks = [
+    { score: 0, rank: "Private" },
+    { score: 100, rank: "Corporal" },
+    { score: 300, rank: "Sergeant" },
+    { score: 600, rank: "Lieutenant" },
+    { score: 1000, rank: "Captain" },
+    { score: 1500, rank: "Major" },
+    { score: 2500, rank: "Colonel" },
+    { score: 4000, rank: "General" },
+    { score: 6000, rank: "Field Marshal" }
+];
+let scene, camera, renderer, controls;
+let artillery, artilleryBarrel;
+let shell, shellTrajectory, barrelTip;
+let ground, skybox;
+let targetMesh, foMesh, batteryMesh;
+let raycaster, mouse;
+let clock = new THREE.Clock();
+const homeScreen = document.getElementById('home-screen');
+const batteryNameInput = document.getElementById('battery-name-input');
+const difficultySelect = document.getElementById('difficulty-select');
+const startButton = document.getElementById('start-button');
+const tutorialButton = document.getElementById('tutorial-button');
+const tutorialContainer = document.getElementById('tutorial-container');
+const closeTutorial = document.getElementById('close-tutorial');
+const hud = document.getElementById('hud');
+const controlsPanel = document.getElementById('controls');
+const missionInfo = document.getElementById('mission-info');
+const targetInfo = document.getElementById('target-info');
+const elevationInput = document.getElementById('elevation-input');
+const elevationSlider = document.getElementById('elevation-slider');
+const azimuthInput = document.getElementById('azimuth-input');
+const azimuthSlider = document.getElementById('azimuth-slider');
+const fireButton = document.getElementById('fire-button');
+const chartButton = document.getElementById('chart-button');
+const giveUpButton = document.getElementById('give-up-button');
+const commanderChart = document.getElementById('commander-chart');
+const closeChart = document.getElementById('close-chart');
+const chartMap = document.getElementById('chart-map');
+const toggleTriangle = document.getElementById('toggle-triangle');
+const toggleRuler = document.getElementById('toggle-ruler');
+const bearingRuler = document.getElementById('bearing-ruler');
+const foReport = document.getElementById('fo-report');
+const gameOver = document.getElementById('game-over');
+const gameOverTitle = document.getElementById('game-over-title');
+const gameOverStats = document.getElementById('game-over-stats');
+const restartButton = document.getElementById('restart-button');
+const timerDisplay = document.getElementById('timer-display');
+const messageLog = document.getElementById('message-log');
+const shellCounter = document.getElementById('shell-counter');
+const notesTextarea = document.getElementById('notes-textarea');
+const calcDisplay = document.getElementById('calc-display');
+const calcButtons = document.querySelectorAll('.calc-button');
+function init() {
+    initThreeJS();
+    setupEventListeners();
+    setupCalculator();
+    animate();
+}
+function initThreeJS() {
+    scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x90a0b0, 0.0005);
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 20000);
+    camera.position.set(50, 30, 50);
+    camera.lookAt(0, 0, 0);
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0x90a0b0);
+    renderer.shadowMap.enabled = true;
+    document.body.appendChild(renderer.domElement);
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.minPolarAngle = 0.1;
+    controls.maxPolarAngle = Math.PI / 2 - 0.1;
+    controls.minDistance = 10;
+    controls.maxDistance = 500;
+    const ambientLight = new THREE.AmbientLight(0x404040, 3);
+    scene.add(ambientLight);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(100, 300, 100);
+    directionalLight.castShadow = true;
+    directionalLight.shadow.mapSize.width = 2048;
+    directionalLight.shadow.mapSize.height = 2048;
+    directionalLight.shadow.camera.near = 0.5;
+    directionalLight.shadow.camera.far = 500;
+    directionalLight.shadow.camera.left = -200;
+    directionalLight.shadow.camera.right = 200;
+    directionalLight.shadow.camera.top = 200;
+    directionalLight.shadow.camera.bottom = -200;
+    scene.add(directionalLight);
+// In your initThreeJS() function, replace the ground creation with:
+
+const textureLoader = new THREE.TextureLoader();
+
+// Load terrain textures
+    const textures = {
+        color: textureLoader.load('fart/text.png'),
+        normal: textureLoader.load('fart/normal.png'),
+        ao: textureLoader.load('fart/ao.png'),
+        rough: textureLoader.load('fart/rough.png'),
+    };
+
+    // Configure texture properties
+    Object.values(textures).forEach(texture => {
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(512, 512);
+    });
+
+    const geometry = new THREE.PlaneGeometry(10000, 10000, 200, 200);
+    geometry.rotateX(-Math.PI / 2);
+    
+    // Height modification (keep your original terrain shaping)
+    const vertices = geometry.attributes.position.array;
+    for (let i = 0; i < vertices.length; i += 3) {
+        const x = vertices[i];
+        const z = vertices[i + 2];
+        const distanceFromCenter = Math.sqrt(x * x + z * z);
+        
+        if (distanceFromCenter > 5) {
+            vertices[i + 1] = Math.sin(x * 0.1) * Math.cos(z * 0.1) * 10;
+        }
+    }
+    
+    geometry.computeVertexNormals();
+    
+    const material = new THREE.MeshStandardMaterial({
+        map: textures.color,
+        normalMap: textures.normal,
+        aoMap: textures.ao,
+        metalness: 0.2,
+        roughness: 0.8,
+        roughnessMap: textures.rough,
+        side: THREE.DoubleSide,
+        flatShading: false // Better with normal maps
+    });
+    
+    terrain = new THREE.Mesh(geometry, material);
+    terrain.receiveShadow = true;
+    scene.add(terrain);
+
+// Add helper to visualize normals (debug)
+// const helper = new THREE.VertexNormalsHelper(ground, 5, 0x00ff00);
+// scene.add(helper);
+    const skyGeometry = new THREE.BoxGeometry(10000, 10000, 10000);
+    const skyMaterials = [
+        new THREE.MeshBasicMaterial({ color: 0x87ceeb, side: THREE.BackSide }),
+        new THREE.MeshBasicMaterial({ color: 0x87ceeb, side: THREE.BackSide }),
+        new THREE.MeshBasicMaterial({ color: 0x87ceeb, side: THREE.BackSide }),
+        new THREE.MeshBasicMaterial({ color: 0x87ceeb, side: THREE.BackSide }),
+        new THREE.MeshBasicMaterial({ color: 0x87ceeb, side: THREE.BackSide }),
+        new THREE.MeshBasicMaterial({ color: 0x87ceeb, side: THREE.BackSide })
+    ];
+    skybox = new THREE.Mesh(skyGeometry, skyMaterials);
+    scene.add(skybox);
+    createArtillery();
+    raycaster = new THREE.Raycaster();
+    mouse = new THREE.Vector2();
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+}
+function createArtillery() {
+const baseGeometry = new THREE.CylinderGeometry(5, 5, 2, 32);
+const baseMaterial = new THREE.MeshLambertMaterial({ color: 0x556b2f });
+const base = new THREE.Mesh(baseGeometry, baseMaterial);
+base.position.y = 1;
+base.castShadow = true;
+base.receiveShadow = true;
+const turretGeometry = new THREE.CylinderGeometry(4, 4, 3, 32);
+const turretMaterial = new THREE.MeshLambertMaterial({ color: 0x3a5f0b });
+const turret = new THREE.Mesh(turretGeometry, turretMaterial);
+turret.position.y = 3.5;
+turret.castShadow = true;
+turret.receiveShadow = true;
+const barrelGeometry = new THREE.CylinderGeometry(1, 1, 15, 16);
+const barrelMaterial = new THREE.MeshLambertMaterial({ color: 0x3a5f0b });
+artilleryBarrel = new THREE.Mesh(barrelGeometry, barrelMaterial);
+artilleryBarrel.rotation.x = Math.PI / 2;
+artilleryBarrel.position.set(0, 5, 7.5);
+artilleryBarrel.castShadow = true;
+artilleryBarrel.receiveShadow = true;
+const barrelTipGeometry = new THREE.SphereGeometry(0.1, 8, 8);
+const barrelTipMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, visible: false });
+barrelTip = new THREE.Mesh(barrelTipGeometry, barrelTipMaterial);
+barrelTip.position.set(0, 0, 7.5); 
+artilleryBarrel.add(barrelTip); 
+artillery = new THREE.Group();
+artillery.add(base);
+artillery.add(turret);
+artillery.add(artilleryBarrel);
+artillery.position.copy(gameState.positions.battery);
+scene.add(artillery);
+const batteryGeo = new THREE.CylinderGeometry(2, 2, 1, 32);
+const batteryMat = new THREE.MeshLambertMaterial({ color: 0x0000ff });
+batteryMesh = new THREE.Mesh(batteryGeo, batteryMat);
+batteryMesh.position.copy(gameState.positions.battery);
+batteryMesh.position.y = 0.5;
+scene.add(batteryMesh);
+}
+function createTargetMesh() {
+    let targetGeo, targetMat;
+    if (gameState.targetType === 'aircraft') {
+        targetGeo = new THREE.ConeGeometry(10, 15, 10);
+        targetMat = new THREE.MeshLambertMaterial({ color: 0xff0000 });
+        targetMesh = new THREE.Mesh(targetGeo, targetMat);
+        targetMesh.rotation.x = Math.PI / 2;
+        targetMesh.position.copy(gameState.positions.target);
+        targetMesh.position.y = 1.5; 
+    } else if (gameState.targetType === 'armoredVehicles') {
+        targetGeo = new THREE.BoxGeometry(10, 15, 10);
+        targetMat = new THREE.MeshLambertMaterial({ color: 0xff0000 });
+        targetMesh = new THREE.Mesh(targetGeo, targetMat);
+        targetMesh.position.copy(gameState.positions.target);
+        targetMesh.position.y = 1.5;
+    } else { 
+        targetGeo = new THREE.BoxGeometry(10, 15, 10);
+        targetMat = new THREE.MeshLambertMaterial({ color: 0xff0000 });
+        targetMesh = new THREE.Mesh(targetGeo, targetMat);
+        targetMesh.position.copy(gameState.positions.target);
+        targetMesh.position.y = 1.5;
+    }
+    targetMesh.geometry.computeBoundingSphere();
+    targetMesh.castShadow = true;
+    targetMesh.receiveShadow = true;
+    scene.add(targetMesh);
+}
+function createShell() {
+if (shell) scene.remove(shell);
+if (shellTrajectory) scene.remove(shellTrajectory);
+const shellGeometry = new THREE.CylinderGeometry(0.5, 0.5, 2, 16);
+const shellMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
+shell = new THREE.Mesh(shellGeometry, shellMaterial);
+shell.castShadow = true;
+const artilleryPosition = new THREE.Vector3();
+artillery.getWorldPosition(artilleryPosition);
+const barrelDirection = new THREE.Vector3(0, 0, 1);
+barrelDirection.applyQuaternion(artilleryBarrel.quaternion);
+barrelDirection.applyQuaternion(artillery.quaternion);
+const barrelPosition = new THREE.Vector3();
+artilleryBarrel.getWorldPosition(barrelPosition);
+const barrelEndPosition = barrelPosition.clone().add(
+barrelDirection.clone().multiplyScalar(7.5)
+);
+shell.position.copy(barrelEndPosition);
+shell.quaternion.setFromUnitVectors(
+new THREE.Vector3(0, 1, 0), 
+barrelDirection 
+);
+scene.add(shell);
+if (gameState.showTrajectory) {
+const trajectoryGeometry = new THREE.BufferGeometry();
+const trajectoryMaterial = new THREE.LineBasicMaterial({ 
+    color: 0xffff00,
+    transparent: true,
+    opacity: 0.5
+});
+shellTrajectory = new THREE.Line(trajectoryGeometry, trajectoryMaterial);
+scene.add(shellTrajectory);
+}
+return barrelDirection; 
+}
+function setupEventListeners() {
+    startButton.addEventListener('click', startGame);
+    tutorialButton.addEventListener('click', () => {
+        tutorialContainer.style.display = 'block';
+    });
+    closeTutorial.addEventListener('click', () => {
+        tutorialContainer.style.display = 'none';
+    });
+    elevationInput.addEventListener('input', () => {
+        const value = parseFloat(elevationInput.value);
+        if (!isNaN(value)) {
+            elevationSlider.value = value;
+            updateArtilleryElevation(value);
+        }
+    });
+    elevationSlider.addEventListener('input', () => {
+        const value = parseFloat(elevationSlider.value);
+        elevationInput.value = value;
+        updateArtilleryElevation(value);
+    });
+    azimuthInput.addEventListener('input', () => {
+        const value = parseFloat(azimuthInput.value);
+        if (!isNaN(value)) {
+            azimuthSlider.value = value;
+            updateArtilleryAzimuth(value);
+        }
+    });
+    azimuthSlider.addEventListener('input', () => {
+        const value = parseFloat(azimuthSlider.value);
+        azimuthInput.value = value;
+        updateArtilleryAzimuth(value);
+    });
+    fireButton.addEventListener('click', fireShell);
+    chartButton.addEventListener('click', () => {
+        commanderChart.style.display = 'block';
+        updateChartMap();
+    });
+    closeChart.addEventListener('click', () => {
+        commanderChart.style.display = 'none';
+    });
+    toggleTriangle.addEventListener('click', () => {
+        const triangleElement = document.getElementById('chart-triangle');
+        if (triangleElement) {
+            triangleElement.style.display = triangleElement.style.display === 'none' ? 'block' : 'none';
+        }
+    });
+    toggleRuler.addEventListener('click', () => {
+        bearingRuler.style.display = bearingRuler.style.display === 'none' ? 'block' : 'none';
+    });
+    giveUpButton.addEventListener('click', () => {
+        if (confirm("Are you sure you want to give up? This will end the current mission.")) {
+            endGame(false, "Mission Aborted");
+        }
+    });
+    restartButton.addEventListener('click', resetGame);
+    document.addEventListener('keydown', (event) => {
+        const currentTime = Date.now();
+        if (currentTime - gameState.lastKeyTime > 1000) {
+            gameState.secretCode = "";
+        }
+        gameState.lastKeyTime = currentTime;
+        gameState.secretCode += event.key.toUpperCase();
+        if (gameState.secretCode.includes("HAJJ")) {
+            gameState.debugMode = true;
+            showDebugInfo();
+        }
+    });
+}
+function setupCalculator() {
+    let currentExpression = "";
+    calcButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const value = button.textContent;
+            if (value === "=") {
+                try {
+                    let expression = currentExpression
+                        .replace(/sin\(/g, "Math.sin(Math.PI/180*")
+                        .replace(/cos\(/g, "Math.cos(Math.PI/180*")
+                        .replace(/tan\(/g, "Math.tan(Math.PI/180*");
+                    const result = eval(expression);
+                    calcDisplay.textContent = result;
+                    currentExpression = result.toString();
+                } catch (error) {
+                    calcDisplay.textContent = "Error";
+                    currentExpression = "";
+                }
+            } else if (value === "C") {
+                calcDisplay.textContent = "0";
+                currentExpression = "";
+            } else {
+                if (currentExpression === "0" || calcDisplay.textContent === "Error" || calcDisplay.textContent === "0") {
+                    currentExpression = value;
+                } else {
+                    currentExpression += value;
+                }
+                calcDisplay.textContent = currentExpression;
+            }
+        });
+    });
+}
+function startGame() {
+    gameState.batteryName = batteryNameInput.value || "Alpha Battery";
+    gameState.difficulty = difficultySelect.value;
+    const settings = difficultySettings[gameState.difficulty];
+    gameState.maxShells = settings.shells;
+    gameState.shells = settings.shells;
+    gameState.timeLimit = settings.timeLimit;
+    gameState.timeRemaining = settings.timeLimit;
+    gameState.showTrajectory = settings.showTrajectory;
+    generateMission();
+homeScreen.style.display = 'none';
+hud.style.display = 'block';
+controlsPanel.style.display = 'block';  
+    messageLog.style.display = 'block';
+    shellCounter.style.display = 'block';
+    if (gameState.timeLimit !== Infinity) {
+        timerDisplay.style.display = 'block';
+        startTimer();
+    }
+    updateShellCounter();
+    gameState.started = true;
+    addMessage(`Mission Control: Welcome, ${gameState.batteryName}. Your mission is to eliminate the enemy ${gameState.targetType === 'aircraft' ? 'aircraft' : gameState.targetType === 'armoredVehicles' ? 'armored vehicle' : 'building'}.`);
+    addMessage(`Forward Observer: This is Observer. I have eyes on the target. Sending coordinates now.`);
+    updateFOReport();
+}
+function generateMission() {
+    const targetTypes = ['aircraft', 'armoredVehicles', 'buildings'];
+    gameState.targetType = targetTypes[Math.floor(Math.random() * targetTypes.length)];
+    gameState.shellType = shellTypes[gameState.targetType];
+    gameState.positions.battery.set(0, 0, 0);
+    const foDistance = 1000 + Math.random() * 1000;
+    const foAngle = Math.random() * Math.PI * 2;
+    gameState.positions.forwardObserver.set(
+        Math.cos(foAngle) * foDistance,
+        0,
+        Math.sin(foAngle) * foDistance
+    );
+    const batteryToFODistance = gameState.positions.forwardObserver.distanceTo(gameState.positions.battery);
+    gameState.distances.batteryToFO = batteryToFODistance;
+    const angleAtFO = (90 + Math.random() * 60) * Math.PI / 180;
+    gameState.angles.atFO = angleAtFO * 180 / Math.PI;
+    const batteryToTargetDistance = 800 + Math.random() * 1200;
+    gameState.distances.batteryToTarget = batteryToTargetDistance;
+    const foToTargetDistance = Math.sqrt(
+        Math.pow(batteryToFODistance, 2) + 
+        Math.pow(batteryToTargetDistance, 2) - 
+        2 * batteryToFODistance * batteryToTargetDistance * Math.cos(angleAtFO)
+    );
+    gameState.distances.foToTarget = foToTargetDistance;
+    const angleAtBattery = Math.acos(
+        (Math.pow(batteryToFODistance, 2) + Math.pow(batteryToTargetDistance, 2) - Math.pow(foToTargetDistance, 2)) /
+        (2 * batteryToFODistance * batteryToTargetDistance)
+    );
+    gameState.angles.atBattery = angleAtBattery * 180 / Math.PI;
+    const angleAtTarget = Math.acos(
+        (Math.pow(batteryToTargetDistance, 2) + Math.pow(foToTargetDistance, 2) - Math.pow(batteryToFODistance, 2)) /
+        (2 * batteryToTargetDistance * foToTargetDistance)
+    );
+    gameState.angles.atTarget = angleAtTarget * 180 / Math.PI;
+    const batteryToFODirection = new THREE.Vector3().subVectors(
+        gameState.positions.forwardObserver,
+        gameState.positions.battery
+    ).normalize();
+    const targetDirection = new THREE.Vector3(batteryToFODirection.x, 0, batteryToFODirection.z);
+    targetDirection.applyAxisAngle(new THREE.Vector3(0, 1, 0), angleAtBattery);
+    gameState.positions.target.copy(targetDirection.multiplyScalar(batteryToTargetDistance));
+    gameState.solution.elevation = 4 * (batteryToTargetDistance / 1400);
+    const targetVector = new THREE.Vector3().subVectors(
+        gameState.positions.target,
+        gameState.positions.battery
+    );
+    gameState.solution.azimuth = (Math.atan2(targetVector.x, targetVector.z) * 180 / Math.PI + 360) % 360;
+    createTargetMesh();
+    updateMissionInfo();
+    updateTargetInfo();
+}
+function updateMissionInfo() {
+    missionInfo.innerHTML = `
+        <h3>Mission Information</h3>
+        <p>Battery: ${gameState.batteryName}</p>
+        <p>Difficulty: ${difficultySettings[gameState.difficulty].name}</p>
+        <p>Distance to Forward Observer: ${gameState.distances.batteryToFO.toFixed(1)} ft</p>
+        <p>Distance to Target: ${gameState.distances.batteryToTarget.toFixed(1)} ft</p>
+    `;
+}
+function updateTargetInfo() {
+    const targetList = targetTypes[gameState.targetType];
+    const specificTarget = targetList[Math.floor(Math.random() * targetList.length)];
+    targetInfo.innerHTML = `
+        <h3>Target Information</h3>
+        <p>Target Type: ${specificTarget}</p>
+        <p>Recommended Shell: ${gameState.shellType}</p>
+    `;
+}
+function updateFOReport() {
+    foReport.innerHTML = `
+        <p>${gameState.batteryName}, this is Observer. I've pushed out approximately ${gameState.distances.batteryToFO.toFixed(1)} ft from your position to get a clear line of sight. Out here, I've confirmed our enemy—a ${targetTypes[gameState.targetType][Math.floor(Math.random() * targetTypes[gameState.targetType].length)]}—just as the intel described.</p>
+        <p>My measurements show:</p>
+        <ul>
+            <li>Distance from Battery to Forward Observer: ${gameState.distances.batteryToFO.toFixed(1)} ft</li>
+            <li>Distance from Battery to Target: ${gameState.distances.batteryToTarget.toFixed(1)} ft</li>
+            <li>Angle at Forward Observer: ${gameState.angles.atFO.toFixed(1)}°</li>
+        </ul>
+        <p>Calculate the remaining distance and firing solution. Over.</p>
+    `;
+}
+function updateChartMap() {
+    chartMap.innerHTML = '';
+    chartMap.style.position = 'relative';
+    chartMap.style.height = '400px';
+    const maxDistance = Math.max(
+        gameState.distances.batteryToFO,
+        gameState.distances.batteryToTarget,
+        gameState.distances.foToTarget
+    );
+    const scale = 350 / maxDistance;
+    const batteryElement = document.createElement('div');
+    batteryElement.style.position = 'absolute';
+    batteryElement.style.width = '10px';
+    batteryElement.style.height = '10px';
+    batteryElement.style.borderRadius = '50%';
+    batteryElement.style.backgroundColor = 'blue';
+    batteryElement.style.left = '200px';
+    batteryElement.style.top = '200px';
+    batteryElement.style.transform = 'translate(-50%, -50%)';
+    batteryElement.title = gameState.batteryName;
+    chartMap.appendChild(batteryElement);
+    const batteryLabel = document.createElement('div');
+    batteryLabel.style.position = 'absolute';
+    batteryLabel.style.left = '205px';
+    batteryLabel.style.top = '195px';
+    batteryLabel.style.color = '#33ff33';
+    batteryLabel.textContent = 'X';
+    chartMap.appendChild(batteryLabel);
+    const foX = 200 + gameState.positions.forwardObserver.x * scale;
+    const foZ = 200 - gameState.positions.forwardObserver.z * scale;
+    const foElement = document.createElement('div');
+    foElement.style.position = 'absolute';
+    foElement.style.width = '10px';
+    foElement.style.height = '10px';
+    foElement.style.borderRadius = '50%';
+    foElement.style.backgroundColor = 'green';
+    foElement.style.left = foX + 'px';
+    foElement.style.top = foZ + 'px';
+    foElement.style.transform = 'translate(-50%, -50%)';
+    foElement.title = 'Forward Observer';
+    chartMap.appendChild(foElement);
+    const foLabel = document.createElement('div');
+    foLabel.style.position = 'absolute';
+    foLabel.style.left = (foX + 5) + 'px';
+    foLabel.style.top = (foZ - 5) + 'px';
+    foLabel.style.color = '#33ff33';
+    foLabel.textContent = 'Y';
+    chartMap.appendChild(foLabel);
+    const targetX = 200 + gameState.positions.target.x * scale;
+    const targetZ = 200 - gameState.positions.target.z * scale;
+    const targetElement = document.createElement('div');
+    targetElement.style.position = 'absolute';
+    targetElement.style.width = '10px';
+    targetElement.style.height = '10px';
+    targetElement.style.borderRadius = '50%';
+    targetElement.style.backgroundColor = 'red';
+    targetElement.style.left = targetX + 'px';
+    targetElement.style.top = targetZ + 'px';
+    targetElement.style.transform = 'translate(-50%, -50%)';
+    targetElement.title = 'Target';
+    chartMap.appendChild(targetElement);
+    const targetLabel = document.createElement('div');
+    targetLabel.style.position = 'absolute';
+    targetLabel.style.left = (targetX + 5) + 'px';
+    targetLabel.style.top = (targetZ - 5) + 'px';
+    targetLabel.style.color = '#33ff33';
+    targetLabel.textContent = 'Z';
+    chartMap.appendChild(targetLabel);
+    const triangleElement = document.createElement('div');
+    triangleElement.id = 'chart-triangle';
+    triangleElement.style.position = 'absolute';
+    triangleElement.style.left = '0';
+    triangleElement.style.top = '0';
+    triangleElement.style.width = '100%';
+    triangleElement.style.height = '100%';
+    triangleElement.style.pointerEvents = 'none';
+    chartMap.appendChild(triangleElement);
+    const svgNS = "http://www.w3.org/2000/svg"
+    const svg = document.createElementNS(svgNS, "svg");
+    svg.setAttribute("width", "100%");
+    svg.setAttribute("height", "100%");
+    svg.style.position = 'absolute';
+    svg.style.left = '0';
+    svg.style.top = '0';
+    svg.style.pointerEvents = 'none';
+    const line1 = document.createElementNS(svgNS, "line");
+    line1.setAttribute("x1", "200");
+    line1.setAttribute("y1", "200");
+    line1.setAttribute("x2", foX);
+    line1.setAttribute("y2", foZ);
+    line1.setAttribute("stroke", "#33ff33");
+    line1.setAttribute("stroke-width", "1");
+    line1.setAttribute("stroke-dasharray", "5,5");
+    svg.appendChild(line1);
+    const line2 = document.createElementNS(svgNS, "line");
+    line2.setAttribute("x1", "200");
+    line2.setAttribute("y1", "200");
+    line2.setAttribute("x2", targetX);
+    line2.setAttribute("y2", targetZ);
+    line2.setAttribute("stroke", "#33ff33");
+    line2.setAttribute("stroke-width", "1");
+    line2.setAttribute("stroke-dasharray", "5,5");
+    svg.appendChild(line2);
+    const line3 = document.createElementNS(svgNS, "line");
+    line3.setAttribute("x1", foX);
+    line3.setAttribute("y1", foZ);
+    line3.setAttribute("x2", targetX);
+    line3.setAttribute("y2", targetZ);
+    line3.setAttribute("stroke", "#33ff33");
+    line3.setAttribute("stroke-width", "1");
+    line3.setAttribute("stroke-dasharray", "5,5");
+    svg.appendChild(line3);
+    triangleElement.appendChild(svg);
+    const batteryToFOLabel = document.createElement('div');
+    batteryToFOLabel.style.position = 'absolute';
+    batteryToFOLabel.style.left = (200 + (foX - 200) / 2) + 'px';
+    batteryToFOLabel.style.top = (200 + (foZ - 200) / 2) + 'px';
+    batteryToFOLabel.style.color = '#ffff33';
+    batteryToFOLabel.style.backgroundColor = 'rgba(0, 20, 0, 0.7)';
+    batteryToFOLabel.style.padding = '2px';
+    batteryToFOLabel.style.borderRadius = '3px';
+    batteryToFOLabel.textContent = 'c: ' + gameState.distances.batteryToFO.toFixed(1) + ' ft';
+    triangleElement.appendChild(batteryToFOLabel);
+    const batteryToTargetLabel = document.createElement('div');
+    batteryToTargetLabel.style.position = 'absolute';
+    batteryToTargetLabel.style.left = (200 + (targetX - 200) / 2) + 'px';
+    batteryToTargetLabel.style.top = (200 + (targetZ - 200) / 2) + 'px';
+    batteryToTargetLabel.style.color = '#ffff33';
+    batteryToTargetLabel.style.backgroundColor = 'rgba(0, 20, 0, 0.7)';
+    batteryToTargetLabel.style.padding = '2px';
+    batteryToTargetLabel.style.borderRadius = '3px';
+    batteryToTargetLabel.textContent = 'b: ' + gameState.distances.batteryToTarget.toFixed(1) + ' ft';
+    triangleElement.appendChild(batteryToTargetLabel);
+    const foToTargetLabel = document.createElement('div');
+    foToTargetLabel.style.position = 'absolute';
+    foToTargetLabel.style.left = (foX + (targetX - foX) / 2) + 'px';
+    foToTargetLabel.style.top = (foZ + (targetZ - foZ) / 2) + 'px';
+    foToTargetLabel.style.color = '#ffff33';
+    foToTargetLabel.style.backgroundColor = 'rgba(0, 20, 0, 0.7)';
+    foToTargetLabel.style.padding = '2px';
+    foToTargetLabel.style.borderRadius = '3px';
+    foToTargetLabel.textContent = 'a: ' + gameState.distances.foToTarget.toFixed(1) + ' ft';
+    triangleElement.appendChild(foToTargetLabel);
+    bearingRuler.style.left = foX + 'px';
+    bearingRuler.style.top = foZ + 'px';
+    bearingRuler.innerHTML = '';
+    for (let i = 0; i < 360; i += 10) {
+        const mark = document.createElement('div');
+        mark.style.position = 'absolute';
+        mark.style.left = '50%';
+        mark.style.top = '0';
+        mark.style.width = '1px';
+        mark.style.height = '10px';
+        mark.style.backgroundColor = '#33ff33';
+        mark.style.transform = `rotate(${i}deg) translateX(-50%)`;
+        mark.style.transformOrigin = 'bottom center';
+        bearingRuler.appendChild(mark);
+        if (i % 30 === 0) {
+            const label = document.createElement('div');
+            label.style.position = 'absolute';
+            label.style.left = '50%';
+            label.style.top = '10px';
+            label.style.color = '#33ff33';
+            label.style.fontSize = '10px';
+            label.style.transform = `rotate(${i}deg) translateX(-50%) translateY(-100%) rotate(-${i}deg)`;
+            label.style.transformOrigin = 'bottom center';
+            label.textContent = i.toString();
+            bearingRuler.appendChild(label);
+        }
+    }
+    const north = document.createElement('div');
+    north.style.position = 'absolute';
+    north.style.left = '20px';
+    north.style.top = '20px';
+    north.style.color = '#33ff33';
+    north.style.fontSize = '16px';
+    north.textContent = 'N';
+    chartMap.appendChild(north);
+                const east = document.createElement('div');
+    east.style.position = 'absolute';
+    east.style.left = '380px';
+    east.style.top = '20px';
+    east.style.color = '#33ff33';
+    east.style.fontSize = '16px';
+    east.textContent = 'E';
+    chartMap.appendChild(east);
+    const south = document.createElement('div');
+    south.style.position = 'absolute';
+    south.style.left = '20px';
+    south.style.top = '380px';
+    south.style.color = '#33ff33';
+    south.style.fontSize = '16px';
+    south.textContent = 'S';
+    chartMap.appendChild(south);
+    const west = document.createElement('div');
+    west.style.position = 'absolute';
+    west.style.left = '380px';
+    west.style.top = '380px';
+    west.style.color = '#33ff33';
+    west.style.fontSize = '16px';
+    west.textContent = 'W';
+    chartMap.appendChild(west);
+    const coordInfo = document.createElement('div');
+    coordInfo.style.position = 'absolute';
+    coordInfo.style.left = '10px';
+    coordInfo.style.bottom = '10px';
+    coordInfo.style.color = '#33ff33';
+    coordInfo.style.fontSize = '12px';
+    coordInfo.textContent = 'Grid: 1 square = 100 ft';
+    chartMap.appendChild(coordInfo);
+}
+function updateArtilleryElevation(elevation) {
+const minElevation = 1; 
+elevation = Math.max(minElevation, elevation);
+gameState.currentElevation = elevation;
+artilleryBarrel.rotation.x = Math.PI / 2 - (elevation * Math.PI / 180);
+elevationInput.value = elevation;
+elevationSlider.value = elevation;
+}
+function updateArtilleryAzimuth(azimuth) {
+    gameState.currentAzimuth = azimuth;
+    artillery.rotation.y = azimuth * Math.PI / 180;
+}
+function createShell() {
+if (shell) scene.remove(shell);
+if (shellTrajectory) scene.remove(shellTrajectory);
+const shellGeometry = new THREE.CylinderGeometry(0.5, 0.5, 2, 16);
+const shellMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
+shell = new THREE.Mesh(shellGeometry, shellMaterial);
+shell.castShadow = true;
+const artilleryPosition = new THREE.Vector3();
+artillery.getWorldPosition(artilleryPosition);
+const barrelDirection = new THREE.Vector3(0, 0, 1);
+barrelDirection.applyQuaternion(artilleryBarrel.quaternion);
+barrelDirection.applyQuaternion(artillery.quaternion);
+const barrelPosition = new THREE.Vector3();
+artilleryBarrel.getWorldPosition(barrelPosition);
+const barrelEndPosition = barrelPosition.clone().add(
+barrelDirection.clone().multiplyScalar(7.5)
+);
+shell.position.copy(barrelEndPosition);
+shell.quaternion.setFromUnitVectors(
+new THREE.Vector3(0, 1, 0), 
+barrelDirection 
+);
+scene.add(shell);
+if (gameState.showTrajectory) {
+const trajectoryGeometry = new THREE.BufferGeometry();
+const trajectoryMaterial = new THREE.LineBasicMaterial({ 
+    color: 0xffff00,
+    transparent: true,
+    opacity: 0.5
+});
+shellTrajectory = new THREE.Line(trajectoryGeometry, trajectoryMaterial);
+scene.add(shellTrajectory);
+}
+return barrelDirection; 
+}
+function fireShell() {
+if (gameState.isFiring || gameState.shells <= 0) return;
+gameState.shells--;
+updateShellCounter();
+gameState.isFiring = true;
+addMessage(`${gameState.batteryName}: FIRE!`);
+const barrelTipPosition = new THREE.Vector3();
+barrelTip.getWorldPosition(barrelTipPosition);
+if (barrelTipPosition.y < 1) {
+barrelTipPosition.y = 1; 
+}
+const shellGeometry = new THREE.CylinderGeometry(0.5, 0.5, 2, 16);
+const shellMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
+shell = new THREE.Mesh(shellGeometry, shellMaterial);
+shell.position.copy(barrelTipPosition);
+shell.quaternion.copy(artilleryBarrel.quaternion);
+shell.rotation.x += Math.PI / 2; 
+scene.add(shell);
+const muzzleVelocity = 500;
+const gravity = 24.8;
+const dx = gameState.positions.target.x - barrelTipPosition.x;
+const dz = gameState.positions.target.z - barrelTipPosition.z;
+const d  = Math.sqrt(dx*dx + dz*dz);
+function computeElevationForDistance(d, v, g) {
+const ratio = (g * d) / (v * v);
+if (ratio < -1 || ratio > 1) return null;
+return 0.5 * Math.asin(ratio);
+}
+const perfectElev = computeElevationForDistance(d, muzzleVelocity, gravity);
+if (perfectElev === null) {
+addMessage("Target out of range!");
+gameState.isFiring = false;
+return;
+}
+const elevationRad = perfectElev;
+const azimuthRad   = gameState.currentAzimuth * Math.PI / 180;
+console.log(`Auto‐elev: ${(elevationRad*180/Math.PI).toFixed(2)}°`);
+const velocityX = muzzleVelocity * Math.cos(elevationRad) * Math.sin(azimuthRad);
+const velocityY = muzzleVelocity * Math.sin(elevationRad);
+const velocityZ = muzzleVelocity * Math.cos(elevationRad) * Math.cos(azimuthRad);
+console.log(`Velocity components: X=${velocityX}, Y=${velocityY}, Z=${velocityZ}`);
+const originalCameraPosition = camera.position.clone();
+const shakeIntensity = 1;
+const shakeDuration = 0.5; 
+let shakeTime = 0;
+const originalCameraTarget = controls.target.clone();
+let time = 0;
+const animate = () => {
+        const deltaTime = Math.min(0.05, clock.getDelta());
+        time += deltaTime;
+        const newX = barrelTipPosition.x + velocityX * time;
+        const newY = barrelTipPosition.y + velocityY * time - 0.5 * gravity * time * time;
+        const newZ = barrelTipPosition.z + velocityZ * time;
+        shell.position.set(newX, newY, newZ);
+        
+        // Add collision detection during flight
+        if (targetMesh && checkCollision(shell, targetMesh)) {
+            createExplosion(shell.position.clone());
+            scene.remove(shell);
+            setTimeout(() => {
+                controls.target.copy(originalCameraTarget);
+                camera.position.copy(originalCameraPosition);
+                controls.update();
+                handleHit();
+                gameState.isFiring = false;
+            }, 2000);
+            return;
+        }
+if (shakeTime < shakeDuration) {
+    shakeTime += deltaTime;
+    const shakeOffset = new THREE.Vector3(
+        (Math.random() - 0.5) * 2 * shakeIntensity,
+        (Math.random() - 0.5) * 2 * shakeIntensity,
+        (Math.random() - 0.5) * 2 * shakeIntensity
+    );
+    camera.position.copy(originalCameraPosition).add(shakeOffset);
+}
+if (time > shakeDuration) {
+    controls.target.copy(shell.position);
+    controls.update();
+}
+if (shell.position.y <= 0) {
+            const impactPosition = new THREE.Vector3(
+                shell.position.x,
+                0,
+                shell.position.z
+            );
+            
+            createExplosion(impactPosition);
+            scene.remove(shell);
+            
+            setTimeout(() => {
+                controls.target.copy(originalCameraTarget);
+                camera.position.copy(originalCameraPosition);
+                controls.update();
+                
+                // The explosion collision detection in createExplosion will handle hits
+                // This is just for misses
+                const targetPosition = new THREE.Vector3(
+                    gameState.positions.target.x,
+                    0,
+                    gameState.positions.target.z
+                );
+                const distanceToTarget = impactPosition.distanceTo(targetPosition);
+                
+                // If not already handled as a hit by the explosion
+                if (distanceToTarget >= 15) { // Explosion radius
+                    handleMiss(distanceToTarget);
+                }
+                
+                gameState.isFiring = false;
+            }, 2000);
+            return;
+        }
+if (gameState.isFiring) {
+    requestAnimationFrame(animate);
+}
+};
+animate();
+}
+function checkCollision(mesh1, mesh2) {
+    // Update the bounding boxes/spheres
+    mesh1.geometry.computeBoundingSphere();
+    mesh2.geometry.computeBoundingSphere();
+    
+    // Get the bounding spheres
+    const sphere1 = mesh1.geometry.boundingSphere.clone();
+    const sphere2 = mesh2.geometry.boundingSphere.clone();
+    
+    // Apply the mesh transformations to the bounding spheres
+    sphere1.radius *= Math.max(
+        mesh1.scale.x, 
+        mesh1.scale.y, 
+        mesh1.scale.z
+    );
+    sphere2.radius *= Math.max(
+        mesh2.scale.x, 
+        mesh2.scale.y, 
+        mesh2.scale.z
+    );
+    
+    // Get world positions
+    const position1 = new THREE.Vector3();
+    const position2 = new THREE.Vector3();
+    mesh1.getWorldPosition(position1);
+    mesh2.getWorldPosition(position2);
+    
+    // Calculate distance between centers
+    const distance = position1.distanceTo(position2);
+    
+    // Check if the spheres intersect
+    return distance < (sphere1.radius + sphere2.radius);
+}
+function createExplosion(position) {
+    const explosionRadius = 15;
+    const particleCount = 500;
+    const particleGeometry = new THREE.BufferGeometry();
+    const particlePositions = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount; i++) {
+        particlePositions[i * 3] = position.x;
+        particlePositions[i * 3 + 1] = position.y;
+        particlePositions[i * 3 + 2] = position.z;
+    }
+    particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+    const particleMaterial = new THREE.PointsMaterial({
+        color: 0xff9933,
+        size: 2,
+        blending: THREE.AdditiveBlending,
+        transparent: true,
+        sizeAttenuation: true
+    });
+    const particles = new THREE.Points(particleGeometry, particleMaterial);
+    scene.add(particles);
+    const velocities = [];
+    for (let i = 0; i < particleCount; i++) {
+        velocities.push({
+            x: (Math.random() - 0.5) * 20,
+            y: Math.random() * 20,
+            z: (Math.random() - 0.5) * 20
+        });
+    }
+    if (targetMesh) {
+        const targetPosition = new THREE.Vector3();
+        targetMesh.getWorldPosition(targetPosition);
+        const distanceToTarget = position.distanceTo(targetPosition);
+        
+        // If the explosion radius reaches the target
+        if (distanceToTarget < explosionRadius + targetMesh.geometry.boundingSphere.radius) {
+            setTimeout(() => {
+                handleHit();
+            }, 500);}}
+    let explosionTime = 0;
+    const explosionDuration = 2; 
+    const animateExplosion = () => {
+        const deltaTime = Math.min(0.05, clock.getDelta());
+        explosionTime += deltaTime;
+        const positions = particleGeometry.attributes.position.array;
+        for (let i = 0; i < particleCount; i++) {
+            positions[i * 3] += velocities[i].x * deltaTime;
+            positions[i * 3 + 1] += velocities[i].y * deltaTime;
+            positions[i * 3 + 2] += velocities[i].z * deltaTime;
+            velocities[i].y -= 9.8 * deltaTime;
+        }
+        particleGeometry.attributes.position.needsUpdate = true;
+        particleMaterial.opacity = 1 - (explosionTime / explosionDuration);
+        if (explosionTime < explosionDuration) {
+            requestAnimationFrame(animateExplosion);
+        } else {
+            scene.remove(particles);
+        }
+    };
+    animateExplosion();
+}
+function handleHit() {
+    addMessage(`Forward Observer: Direct hit! Target destroyed!`);
+    scene.remove(targetMesh);
+    const accuracyBonus = 100;
+    const difficultyMultiplier = difficultySettings[gameState.difficulty].scoreMultiplier;
+    const timeBonus = Math.floor(gameState.timeRemaining / 10);
+    const shellBonus = gameState.shells * 50;
+    const score = (accuracyBonus + timeBonus + shellBonus) * difficultyMultiplier;
+    gameState.score += score;
+    gameState.wins++;
+    endGame(true, `Target destroyed! Score: ${score}`);
+}
+function handleMiss(distance) {
+    addMessage(`Forward Observer: Miss! Shell landed ${distance.toFixed(1)} ft from target.`);
+    const targetVector = new THREE.Vector3().subVectors(
+        gameState.positions.target,
+        gameState.positions.battery
+    );
+    const targetAzimuth = (Math.atan2(targetVector.x, targetVector.z) * 180 / Math.PI + 360) % 360;
+    const azimuthDiff = ((targetAzimuth - gameState.currentAzimuth + 180) % 360) - 180;
+    let azimuthFeedback = "";
+    if (Math.abs(azimuthDiff) > 5) {
+        azimuthFeedback = azimuthDiff > 0 ? "Adjust azimuth right." : "Adjust azimuth left.";
+    }
+    const elevationDiff = gameState.solution.elevation - gameState.currentElevation;
+    let elevationFeedback = "";
+    if (Math.abs(elevationDiff) > 0.5) {
+        elevationFeedback = elevationDiff > 0 ? "Increase elevation." : "Decrease elevation.";
+    }
+    if (azimuthFeedback || elevationFeedback) {
+        addMessage(`Forward Observer: ${azimuthFeedback} ${elevationFeedback}`);
+    }
+    if (gameState.shells <= 0) {
+        endGame(false, "Out of shells");
+    }
+}
+function startTimer() {
+    gameState.timerInterval = setInterval(() => {
+        gameState.timeRemaining--;
+        updateTimerDisplay();
+        if (gameState.timeRemaining <= 0) {
+            clearInterval(gameState.timerInterval);
+            endGame(false, "Time's up");
+        }
+    }, 1000);
+}
+function updateTimerDisplay() {
+    const minutes = Math.floor(gameState.timeRemaining / 60);
+    const seconds = gameState.timeRemaining % 60;
+    timerDisplay.textContent = `Time: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    if (gameState.timeRemaining <= 60) {
+        timerDisplay.style.color = '#ff3333';
+    }
+}
+function updateShellCounter() {
+    shellCounter.textContent = `Shells: ${gameState.shells}`;
+}
+function addMessage(message) {
+    const messageElement = document.createElement('div');
+    messageElement.className = 'message';
+    messageElement.textContent = message;
+    messageLog.appendChild(messageElement);
+    messageLog.scrollTop = messageLog.scrollHeight;
+}
+function showDebugInfo() {
+    addMessage(`DEBUG MODE ACTIVATED`);
+    addMessage(`Solution: Elevation ${gameState.solution.elevation.toFixed(2)}°, Azimuth ${gameState.solution.azimuth.toFixed(2)}°`);
+    addMessage(`FO to Target distance: ${gameState.distances.foToTarget.toFixed(2)} ft`);
+}
+function endGame(success, reason) {
+    if (gameState.timerInterval) {
+        clearInterval(gameState.timerInterval);
+    }
+    gameOver.style.display = 'flex';
+    if (success) {
+        gameOverTitle.textContent = 'MISSION ACCOMPLISHED';
+        gameOverTitle.style.color = '#33ff33';
+        const rank = getMilitaryRank(gameState.score);
+        gameOverStats.innerHTML = `
+            <p>Target destroyed!</p>
+            <p>Score: ${gameState.score}</p>
+            <p>Rank: ${rank}</p>
+            <p>Successful missions: ${gameState.wins}</p>
+        `;
+    } else {
+        gameOverTitle.textContent = 'MISSION FAILED';
+        gameOverTitle.style.color = '#ff3333';
+        gameOverStats.innerHTML = `
+            <p>${reason}</p>
+            <p>Score: ${gameState.score}</p>
+            <p>Successful missions: ${gameState.wins}</p>
+        `;
+    }
+}
+function getMilitaryRank(score) {
+    let rank = militaryRanks[0].rank;
+    for (let i = 0; i < militaryRanks.length; i++) {
+        if (score >= militaryRanks[i].score) {
+            rank = militaryRanks[i].rank;
+        } else {
+            break;
+        }
+    }
+    return rank;
+}
+function resetGame() {
+gameOver.style.display = 'none';
+hud.style.display = 'none';
+controlsPanel.style.display = 'none';  
+    messageLog.style.display = 'none';
+    shellCounter.style.display = 'none';
+    timerDisplay.style.display = 'none';
+    commanderChart.style.display = 'none';
+    homeScreen.style.display = 'flex';
+    messageLog.innerHTML = '';
+    gameState.started = false;
+    gameState.isFiring = false;
+    if (targetMesh) scene.remove(targetMesh);
+    if (foMesh) scene.remove(foMesh);
+    if (shell) scene.remove(shell);
+    if (shellTrajectory) scene.remove(shellTrajectory);
+    camera.position.set(50, 30, 50);
+    camera.lookAt(0, 0, 0);
+    controls.target.set(0, 0, 0);
+    controls.update();
+    updateArtilleryElevation(0);
+    updateArtilleryAzimuth(0);
+    elevationInput.value = 0;
+    elevationSlider.value = 0;
+    azimuthInput.value = 0;
+    azimuthSlider.value = 0;
+}
+function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene, camera);
+}
+init();
+
+    </script>
+</body>
+</html>
+
+
