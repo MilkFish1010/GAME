@@ -195,7 +195,13 @@
             border: 1px dashed #33ff33;
             opacity: 0.7;
             display: none;
+            cursor: crosshair;
+    user-select: none;
+    
         }
+        .bearing-measurement-line {
+    pointer-events: none;
+}
         #game-over {
             position: absolute;
             top: 0;
@@ -498,11 +504,16 @@ Elevation θ = 4 × (distance / 1400ft)
 
     <script>
         const gameState = {
+            isMeasuring: false,
+    startPoint: null,
+    currentBearing: 0,
+    measurementLine: null,
+    measurementLabel: null,
     started: false,
     batteryName: "Alpha Battery",
     difficulty: "medium",
     shells: 0,
-    maxShells: 2,
+    maxShells: 100,
     timeLimit: 13 * 60, 
     timeRemaining: 0,
     timerInterval: null,
@@ -568,7 +579,7 @@ const shellTypes = {
 const difficultySettings = {
     easiest: {
         name: "Relaxed mode 😄",
-        shells: 5,
+        shells: 100,
         timeLimit: Infinity,
         showTrajectory: true,
         scoreMultiplier: 1
@@ -768,43 +779,208 @@ const textureLoader = new THREE.TextureLoader();
     });
 }
 function createArtillery() {
-const baseGeometry = new THREE.CylinderGeometry(5, 5, 2, 32);
-const baseMaterial = new THREE.MeshLambertMaterial({ color: 0x556b2f });
-const base = new THREE.Mesh(baseGeometry, baseMaterial);
-base.position.y = 1;
-base.castShadow = true;
-base.receiveShadow = true;
-const turretGeometry = new THREE.CylinderGeometry(4, 4, 3, 32);
-const turretMaterial = new THREE.MeshLambertMaterial({ color: 0x3a5f0b });
-const turret = new THREE.Mesh(turretGeometry, turretMaterial);
-turret.position.y = 3.5;
-turret.castShadow = true;
-turret.receiveShadow = true;
-const barrelGeometry = new THREE.CylinderGeometry(1, 1, 15, 16);
-const barrelMaterial = new THREE.MeshLambertMaterial({ color: 0x3a5f0b });
-artilleryBarrel = new THREE.Mesh(barrelGeometry, barrelMaterial);
-artilleryBarrel.rotation.x = Math.PI / 2;
-artilleryBarrel.position.set(0, 5, 7.5);
-artilleryBarrel.castShadow = true;
-artilleryBarrel.receiveShadow = true;
-const barrelTipGeometry = new THREE.SphereGeometry(0.1, 8, 8);
-const barrelTipMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, visible: false });
-barrelTip = new THREE.Mesh(barrelTipGeometry, barrelTipMaterial);
-barrelTip.position.set(0, 0, 7.5); 
-artilleryBarrel.add(barrelTip); 
-artillery = new THREE.Group();
-artillery.add(base);
-artillery.add(turret);
-artillery.add(artilleryBarrel);
-artillery.position.copy(gameState.positions.battery);
-scene.add(artillery);
-const batteryGeo = new THREE.CylinderGeometry(2, 2, 1, 32);
-const batteryMat = new THREE.MeshLambertMaterial({ color: 0x0000ff });
-batteryMesh = new THREE.Mesh(batteryGeo, batteryMat);
-batteryMesh.position.copy(gameState.positions.battery);
-batteryMesh.position.y = 0.5;
-scene.add(batteryMesh);
+    // Main container
+    artillery = new THREE.Group();
+
+    // --- WAGON (base + wheels + legs + feet) ---
+    const wagon = new THREE.Group();
+
+    // Carriage/base
+    const baseGeometry = new THREE.BoxGeometry(10, 1.5, 8);
+    
+    const baseMaterial = new THREE.MeshStandardMaterial({
+        color: 0x3d5e35,
+        roughness: 0.7,
+        metalness: 0.2
+    });
+    const base = new THREE.Mesh(baseGeometry, baseMaterial);
+    base.position.y = 0.75;
+    base.castShadow = true;
+    base.receiveShadow = true;
+    wagon.add(base);
+
+    // Wheels
+    const wheelGeometry = new THREE.CylinderGeometry(2.5, 2.5, 1, 16);
+    const wheelMaterial = new THREE.MeshStandardMaterial({
+        color: 0x222222,
+        roughness: 0.9,
+        metalness: 0.1
+    });
+
+    const leftWheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+    leftWheel.position.set(0, 2, 4.5);
+    leftWheel.rotation.x = Math.PI / 2;
+    leftWheel.castShadow = true;
+    wagon.add(leftWheel);
+
+    const rightWheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+    rightWheel.position.set(0, 2, -4.5);
+    rightWheel.rotation.x = Math.PI / 2;
+    rightWheel.castShadow = true;
+    wagon.add(rightWheel);
+
+    // Stabilizing legs
+    const legGeometry = new THREE.BoxGeometry(1, 3, 1);
+    const legMaterial = new THREE.MeshStandardMaterial({
+        color: 0x444444,
+        roughness: 0.6,
+        metalness: 0.4
+    });
+
+    const frontLeftLeg = new THREE.Mesh(legGeometry, legMaterial);
+    frontLeftLeg.position.set(4, 1.5, 3);
+    frontLeftLeg.rotation.z = Math.PI / 6;
+    wagon.add(frontLeftLeg);
+
+    const frontRightLeg = new THREE.Mesh(legGeometry, legMaterial);
+    frontRightLeg.position.set(4, 1.5, -3);
+    frontRightLeg.rotation.z = Math.PI / 6;
+    wagon.add(frontRightLeg);
+
+    const rearLeftLeg = new THREE.Mesh(legGeometry, legMaterial);
+    rearLeftLeg.position.set(-4, 1.5, 3);
+    rearLeftLeg.rotation.z = -Math.PI / 6;
+    wagon.add(rearLeftLeg);
+
+    const rearRightLeg = new THREE.Mesh(legGeometry, legMaterial);
+    rearRightLeg.position.set(-4, 1.5, -3);
+    rearRightLeg.rotation.z = -Math.PI / 6;
+    wagon.add(rearRightLeg);
+
+    // Foot pads
+    const footGeometry = new THREE.BoxGeometry(2, 0.5, 2);
+    const footMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
+    [
+      [4, 0.25, 3],
+      [4, 0.25, -3],
+      [-4, 0.25, 3],
+      [-4, 0.25, -3]
+    ].forEach(pos => {
+      const foot = new THREE.Mesh(footGeometry, footMaterial);
+      foot.position.set(pos[0], pos[1], pos[2]);
+      wagon.add(foot);
+    });
+
+    // Rotate the wagon so it faces the same way as the barrel
+    wagon.rotation.y = Math.PI / 2;
+    artillery.add(wagon);
+
+    // --- CRADLE & TRUNNIONS & ARC & SHIELD ---
+    const cradleGeometry = new THREE.BoxGeometry(4, 3, 4);
+    const cradleMaterial = new THREE.MeshStandardMaterial({
+        color: 0x3a5f0b,
+        roughness: 0.5,
+        metalness: 0.4
+    });
+    const cradle = new THREE.Mesh(cradleGeometry, cradleMaterial);
+    cradle.position.y = 4;
+    cradle.castShadow = true;
+    cradle.receiveShadow = true;
+    artillery.add(cradle);
+
+    const trunnionGeometry = new THREE.CylinderGeometry(0.8, 0.8, 5, 16);
+    const trunnionMaterial = new THREE.MeshStandardMaterial({
+        color: 0x444444,
+        roughness: 0.4,
+        metalness: 0.6
+    });
+    const trunnion = new THREE.Mesh(trunnionGeometry, trunnionMaterial);
+    trunnion.position.y = 4;
+    trunnion.rotation.x = Math.PI / 2;
+    artillery.add(trunnion);
+
+    const arcGeometry = new THREE.TorusGeometry(3, 0.3, 8, 12, Math.PI / 2);
+    const arcMaterial = new THREE.MeshStandardMaterial({
+        color: 0x555555,
+        roughness: 0.5,
+        metalness: 0.5
+    });
+    const elevationArc = new THREE.Mesh(arcGeometry, arcMaterial);
+    elevationArc.position.set(-2, 4, 0);
+    elevationArc.rotation.y = Math.PI / 2;
+    artillery.add(elevationArc);
+
+    const shieldGeometry = new THREE.BoxGeometry(7, 5, 0.5);
+    const shieldMaterial = new THREE.MeshStandardMaterial({
+        color: 0x4a6c42,
+        roughness: 0.6,
+        metalness: 0.3
+    });
+    const shield = new THREE.Mesh(shieldGeometry, shieldMaterial);
+    shield.position.set(0, 4, -5);
+    shield.castShadow = true;
+    artillery.add(shield);
+
+    // --- BARREL & RECOIL & MUZZLE ---
+    const barrelGroup = new THREE.Group();
+
+    const barrelGeometry = new THREE.CylinderGeometry(0.9, 1.1, 18, 16);
+    const barrelMaterial = new THREE.MeshStandardMaterial({
+        color: 0x333333,
+        roughness: 0.4,
+        metalness: 0.7
+    });
+    artilleryBarrel = new THREE.Mesh(barrelGeometry, barrelMaterial);
+    artilleryBarrel.rotation.x = Math.PI / 2;
+    artilleryBarrel.position.set(0, 0, 9);
+    artilleryBarrel.castShadow = true;
+    barrelGroup.add(artilleryBarrel);
+
+    const barrelBaseGeometry = new THREE.CylinderGeometry(1.4, 1.8, 2, 16);
+    const barrelBase = new THREE.Mesh(barrelBaseGeometry, barrelMaterial);
+    barrelBase.rotation.x = Math.PI / 2;
+    barrelBase.position.set(0, 0, 1);
+    barrelGroup.add(barrelBase);
+
+    const muzzleGeometry = new THREE.CylinderGeometry(1.8, 1.4, 2, 16);
+    const muzzle = new THREE.Mesh(muzzleGeometry, barrelMaterial);
+    muzzle.rotation.x = Math.PI / 2;
+    muzzle.position.set(0, 0, 17.5);
+    barrelGroup.add(muzzle);
+
+    const recoilCylinderGeometry = new THREE.CylinderGeometry(0.5, 0.5, 12, 16);
+    const recoilMaterial = new THREE.MeshStandardMaterial({
+        color: 0x666666,
+        roughness: 0.3,
+        metalness: 0.8
+    });
+
+    const topRecoilCylinder = new THREE.Mesh(recoilCylinderGeometry, recoilMaterial);
+    topRecoilCylinder.rotation.x = Math.PI / 2;
+    topRecoilCylinder.position.set(0, 1.2, 5);
+    barrelGroup.add(topRecoilCylinder);
+
+    const bottomRecoilCylinder = new THREE.Mesh(recoilCylinderGeometry, recoilMaterial);
+    bottomRecoilCylinder.rotation.x = Math.PI / 2;
+    bottomRecoilCylinder.position.set(0, -1.2, 5);
+    barrelGroup.add(bottomRecoilCylinder);
+
+    barrelGroup.position.set(0, 4, 0);
+    artillery.add(barrelGroup);
+
+    // Invisible barrel tip for spawning projectiles
+    const barrelTipGeometry = new THREE.SphereGeometry(0.1, 8, 8);
+    const barrelTipMaterial = new THREE.MeshBasicMaterial({
+        color: 0xff0000,
+        visible: false
+    });
+    barrelTip = new THREE.Mesh(barrelTipGeometry, barrelTipMaterial);
+    barrelTip.position.set(0, 0, 9);
+    artilleryBarrel.add(barrelTip);
+
+    // Place artillery in world
+    artillery.position.copy(gameState.positions.battery);
+    scene.add(artillery);
+
+    // Battery marker
+    const batteryGeo = new THREE.CylinderGeometry(2, 2, 0.5, 32);
+    const batteryMat = new THREE.MeshLambertMaterial({ color: 0x0000ff });
+    batteryMesh = new THREE.Mesh(batteryGeo, batteryMat);
+    batteryMesh.position.copy(gameState.positions.battery);
+    batteryMesh.position.y = 0.25;
+    scene.add(batteryMesh);
 }
+
 function createTargetMesh() {
     let targetGeo, targetMat;
     if (gameState.targetType === 'aircraft') {
@@ -868,6 +1044,7 @@ scene.add(shellTrajectory);
 return barrelDirection; 
 }
 function setupEventListeners() {
+    
     startButton.addEventListener('click', startGame);
     tutorialButton.addEventListener('click', () => {
         tutorialContainer.style.display = 'block';
@@ -922,6 +1099,7 @@ function setupEventListeners() {
         }
     });
     restartButton.addEventListener('click', resetGame);
+    
     document.addEventListener('keydown', (event) => {
         const currentTime = Date.now();
         if (currentTime - gameState.lastKeyTime > 1000) {
@@ -933,6 +1111,10 @@ function setupEventListeners() {
             gameState.debugMode = true;
             showDebugInfo();
         }
+        bearingRuler.addEventListener('mousedown', startBearingMeasurement);
+document.addEventListener('mousemove', updateBearingMeasurement);
+document.addEventListener('mouseup', endBearingMeasurement);
+
     });
 }
 function setupCalculator() {
@@ -1074,6 +1256,7 @@ function updateFOReport() {
     `;
 }
 function updateChartMap() {
+    
     chartMap.innerHTML = '';
     chartMap.style.position = 'relative';
     chartMap.style.height = '400px';
@@ -1204,7 +1387,7 @@ function updateChartMap() {
     batteryToTargetLabel.style.backgroundColor = 'rgba(0, 20, 0, 0.7)';
     batteryToTargetLabel.style.padding = '2px';
     batteryToTargetLabel.style.borderRadius = '3px';
-    batteryToTargetLabel.textContent = 'b: ' + gameState.distances.batteryToTarget.toFixed(1) + ' ft';
+    batteryToTargetLabel.textContent = 'b: ' + '???';
     triangleElement.appendChild(batteryToTargetLabel);
     const foToTargetLabel = document.createElement('div');
     foToTargetLabel.style.position = 'absolute';
@@ -1243,6 +1426,7 @@ function updateChartMap() {
             bearingRuler.appendChild(label);
         }
     }
+    
     const north = document.createElement('div');
     north.style.position = 'absolute';
     north.style.left = '20px';
@@ -1283,6 +1467,35 @@ function updateChartMap() {
     coordInfo.style.fontSize = '12px';
     coordInfo.textContent = 'Grid: 1 square = 100 ft';
     chartMap.appendChild(coordInfo);
+    const crosshair = document.createElement('div');
+    crosshair.style.position = 'absolute';
+    crosshair.style.width = '2px';
+    crosshair.style.height = '100%';
+    crosshair.style.backgroundColor = '#33ff33';
+    crosshair.style.left = '50%';
+    crosshair.style.transform = 'translateX(-1px)';
+    bearingRuler.appendChild(crosshair);
+    
+    const crosshairVertical = document.createElement('div');
+    crosshairVertical.style.position = 'absolute';
+    crosshairVertical.style.width = '100%';
+    crosshairVertical.style.height = '2px';
+    crosshairVertical.style.backgroundColor = '#33ff33';
+    crosshairVertical.style.top = '50%';
+    crosshairVertical.style.transform = 'translateY(-1px)';
+    bearingRuler.appendChild(crosshairVertical);
+    
+    // Add center point
+    const centerPoint = document.createElement('div');
+    centerPoint.style.position = 'absolute';
+    centerPoint.style.width = '8px';
+    centerPoint.style.height = '8px';
+    centerPoint.style.backgroundColor = '#33ff33';
+    centerPoint.style.borderRadius = '50%';
+    centerPoint.style.left = '50%';
+    centerPoint.style.top = '50%';
+    centerPoint.style.transform = 'translate(-4px, -4px)';
+    bearingRuler.appendChild(centerPoint);
 }
 function updateArtilleryElevation(elevation) {
 const minElevation = 1; 
@@ -1333,10 +1546,8 @@ return barrelDirection;
 }
 function fireShell() {
 if (gameState.isFiring || gameState.shells <= 0) return;
-gameState.shells--;
-updateShellCounter();
-gameState.isFiring = true;
-addMessage(`${gameState.batteryName}: FIRE!`);
+
+
 const barrelTipPosition = new THREE.Vector3();
 barrelTip.getWorldPosition(barrelTipPosition);
 if (barrelTipPosition.y < 1) {
@@ -1359,13 +1570,17 @@ const ratio = (g * d) / (v * v);
 if (ratio < -1 || ratio > 1) return null;
 return 0.5 * Math.asin(ratio);
 }
-const perfectElev = computeElevationForDistance(d, muzzleVelocity, gravity);
-if (perfectElev === null) {
-addMessage("Target out of range!");
-gameState.isFiring = false;
-return;
+const elevationRad = gameState.currentElevation * Math.PI / 180;
+if (gameState.currentElevation < 1 || gameState.currentElevation > 30) {
+    addMessage("Invalid elevation! Must be between 1° and 30°");
+    scene.remove(shell);
+    gameState.isFiring = false;
+    return;
 }
-const elevationRad = perfectElev;
+gameState.shells--;
+updateShellCounter();
+gameState.isFiring = true;
+addMessage(`${gameState.batteryName}: FIRE!`);
 const azimuthRad   = gameState.currentAzimuth * Math.PI / 180;
 console.log(`Auto‐elev: ${(elevationRad*180/Math.PI).toFixed(2)}°`);
 const velocityX = muzzleVelocity * Math.cos(elevationRad) * Math.sin(azimuthRad);
@@ -1676,6 +1891,80 @@ controlsPanel.style.display = 'none';
     azimuthInput.value = 0;
     azimuthSlider.value = 0;
 }
+
+function startBearingMeasurement(e) {
+    gameState.bearingMeasurement.isMeasuring = true;
+    const rect = bearingRuler.getBoundingClientRect();
+    gameState.bearingMeasurement.startPoint = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+    };
+    
+    // Create measurement line
+    gameState.bearingMeasurement.measurementLine = document.createElement('div');
+    gameState.bearingMeasurement.measurementLine.style.position = 'absolute';
+    gameState.bearingMeasurement.measurementLine.style.backgroundColor = '#33ff33';
+    gameState.bearingMeasurement.measurementLine.style.height = '2px';
+    gameState.bearingMeasurement.measurementLine.style.transformOrigin = '0 0';
+    bearingRuler.appendChild(gameState.bearingMeasurement.measurementLine);
+    
+    // Create measurement label
+    gameState.bearingMeasurement.measurementLabel = document.createElement('div');
+    gameState.bearingMeasurement.measurementLabel.style.position = 'absolute';
+    gameState.bearingMeasurement.measurementLabel.style.color = '#33ff33';
+    gameState.bearingMeasurement.measurementLabel.style.fontSize = '12px';
+    bearingRuler.appendChild(gameState.bearingMeasurement.measurementLabel);
+}
+
+function updateBearingMeasurement(e) {
+    if (!gameState.bearingMeasurement.isMeasuring) return;
+    
+    const rect = bearingRuler.getBoundingClientRect();
+    const currentPoint = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+    };
+    
+    // Calculate bearing angle
+    const centerX = bearingRuler.offsetWidth / 2;
+    const centerY = bearingRuler.offsetHeight / 2;
+    const dx = currentPoint.x - centerX;
+    const dy = centerY - currentPoint.y; // Invert Y-axis
+    const angle = (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360;
+    
+    // Update measurement display
+    gameState.bearingMeasurement.currentBearing = angle.toFixed(1);
+    
+    // Update line position
+    const length = Math.min(bearingRuler.offsetWidth, bearingRuler.offsetHeight) / 2;
+    gameState.bearingMeasurement.measurementLine.style.width = `${length}px`;
+    gameState.bearingMeasurement.measurementLine.style.transform = 
+        `translate(${centerX}px, ${centerY}px) rotate(${angle}deg)`;
+    
+    // Update label position
+    gameState.bearingMeasurement.measurementLabel.textContent = 
+        `${gameState.bearingMeasurement.currentBearing}°`;
+    gameState.bearingMeasurement.measurementLabel.style.left = 
+        `${currentPoint.x + 10}px`;
+    gameState.bearingMeasurement.measurementLabel.style.top = 
+        `${currentPoint.y - 10}px`;
+}
+
+function endBearingMeasurement() {
+    if (!gameState.bearingMeasurement.isMeasuring) return;
+    
+    gameState.bearingMeasurement.isMeasuring = false;
+    bearingRuler.removeChild(gameState.bearingMeasurement.measurementLine);
+    bearingRuler.removeChild(gameState.bearingMeasurement.measurementLabel);
+    
+    // Set azimuth input to measured bearing
+    azimuthInput.value = gameState.bearingMeasurement.currentBearing;
+    azimuthSlider.value = gameState.bearingMeasurement.currentBearing;
+    updateArtilleryAzimuth(gameState.bearingMeasurement.currentBearing);
+    
+    addMessage(`Bearing set to ${gameState.bearingMeasurement.currentBearing}°`);
+}
+
 function animate() {
     requestAnimationFrame(animate);
     controls.update();
